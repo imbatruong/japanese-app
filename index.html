@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trình học từ vựng thông minh</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; padding: 0; display: flex; height: 100vh;
+            background: #f0f2f5; color: #333; 
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px; background: white; padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 15px; z-index: 100;
+        }
+
+        h2 { color: #007bff; font-size: 1.2em; text-align: center; margin: 0 0 10px 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        .tool-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; }
+        
+        input, select { 
+            padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
+            font-size: 13px; width: 100%; box-sizing: border-box;
+        }
+
+        .sheet-nav { display: flex; align-items: center; gap: 5px; }
+        .nav-btn {
+            padding: 8px 12px; background: #007bff; color: white;
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        .nav-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* --- MỤC LUYỆN TẬP (MỚI) --- */
+        .practice-zone {
+            margin-top: 20px; padding-top: 15px; border-top: 2px dashed #eee;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .practice-btn {
+            padding: 12px; background: #28a745; color: white;
+            border: none; border-radius: 6px; cursor: pointer;
+            font-weight: bold; text-align: left; display: flex; align-items: center; gap: 10px;
+            transition: 0.3s; font-size: 13px;
+        }
+        .practice-btn i { font-style: normal; font-size: 18px; }
+        .practice-btn:hover { background: #218838; transform: translateX(5px); }
+        .practice-btn.orange { background: #fd7e14; }
+        .practice-btn.orange:hover { background: #e36a07; }
+        .practice-btn.purple { background: #6f42c1; }
+        .practice-btn.purple:hover { background: #59359a; }
+
+        /* --- KHU VỰC CHÍNH --- */
+        .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
+        .status-bar {
+            background: #e8f4fd; padding: 10px 15px; border-radius: 6px;
+            margin-bottom: 15px; font-weight: bold; color: #007bff;
+            font-size: 0.9em; border-left: 4px solid #007bff;
+        }
+
+        .table-container { 
+            flex: 1; overflow-y: auto; background: white;
+            border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; position: sticky; top: 0; z-index: 10; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        tr:hover { background-color: #eef7ff !important; cursor: pointer; }
+
+        #hover-preview {
+            position: absolute; display: none; z-index: 9999;
+            background: white; border: 3px solid #007bff; border-radius: 10px;
+            padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); pointer-events: none;
+        }
+        #hover-preview img { display: block; max-width: 400px; height: auto; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Smart Flashcard</h2>
+    
+    <div class="tool-group">
+        <label>1. Nạp File (Excel/CSV):</label>
+        <input type="file" id="local-file" accept=".xlsx, .xls, .csv">
+    </div>
+
+    <div class="tool-group">
+        <label>2. Dán Link CSV:</label>
+        <input type="text" id="sheet-url" placeholder="Link Google Sheets...">
+    </div>
+
+    <div class="tool-group">
+        <label>3. Chọn bài học:</label>
+        <div class="sheet-nav">
+            <button class="nav-btn" id="prev-sheet">&lt;</button>
+            <select id="sheet-selector" disabled><option>Trống</option></select>
+            <button class="nav-btn" id="next-sheet">&gt;</button>
+        </div>
+    </div>
+
+    <div class="tool-group">
+        <label>4. Kho ảnh (Folder):</label>
+        <select id="folder-list">
+            <script>
+                for(let i=1; i<=25; i++) {
+                    document.write(`<option value="bai${i}">Hình ảnh Bài ${i}</option>`);
+                }
+            </script>
+        </select>
+    </div>
+
+    <div class="practice-zone">
+        <label>🎯 Chế độ luyện tập:</label>
+        
+        <button class="practice-btn" onclick="openPractice('tracnghiem.html')">
+            <i>📝</i> Trắc nghiệm từ vựng
+        </button>
+
+        <button class="practice-btn orange" onclick="openPractice('latthe.html')">
+            <i>🎴</i> Lật thẻ (Flashcards)
+        </button>
+
+        <button class="practice-btn purple" onclick="openPractice('ghepnoi.html')">
+            <i>🔗</i> Ghép nối từ - câu
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div id="file-status" class="status-bar">Sẵn sàng. Hãy nạp dữ liệu để học.</div>
+    
+    <div class="table-container">
+        <table id="data-table">
+            <thead><tr id="table-header"></tr></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="hover-preview"><img id="preview-img" src="" alt="Ảnh"></div>
+
+<script>
+    const localFile = document.getElementById('local-file');
+    const sheetUrlInput = document.getElementById('sheet-url');
+    const sheetSelector = document.getElementById('sheet-selector');
+    const folderList = document.getElementById('folder-list');
+    const prevBtn = document.getElementById('prev-sheet');
+    const nextBtn = document.getElementById('next-sheet');
+    const tableHeader = document.getElementById('table-header');
+    const tableBody = document.getElementById('table-body');
+    const preview = document.getElementById('hover-preview');
+    const previewImg = document.getElementById('preview-img');
+    const fileStatus = document.getElementById('file-status');
+
+    const IMAGE_BASE_PATH = "images/";
+    let workbookData = null;
+
+    // --- CHỨC NĂNG MỞ TRANG LUYỆN TẬP ---
+    function openPractice(fileName) {
+        // Kiểm tra xem đã nạp dữ liệu chưa
+        if (!workbookData) {
+            alert("Vui lòng nạp file dữ liệu trước khi luyện tập!");
+            return;
+        }
+        // Có thể truyền dữ liệu sang trang mới qua localStorage hoặc URL (tùy nhu cầu)
+        window.location.href = fileName; 
+    }
+
+    // --- LOGIC XỬ LÝ DỮ LIỆU (Giữ nguyên từ bản trước) ---
+    localFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target.result);
+            workbookData = XLSX.read(data, { type: 'array' });
+            updateSheetSelector();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    sheetUrlInput.addEventListener('change', () => {
+        const url = sheetUrlInput.value.trim();
+        if (!url) return;
+        fetch(url).then(res => res.arrayBuffer()).then(buffer => {
+            workbookData = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+            updateSheetSelector();
+        }).catch(() => { fileStatus.innerHTML = "❌ Lỗi kết nối CORS."; });
+    });
+
+    function updateSheetSelector() {
+        if (!workbookData) return;
+        sheetSelector.innerHTML = workbookData.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        sheetSelector.disabled = false;
+        loadDataFromSheet(workbookData.SheetNames[0]);
+    }
+
+    function loadDataFromSheet(sheetName) {
+        if (!workbookData) return;
+        sheetSelector.value = sheetName;
+        const match = sheetName.match(/\d+/);
+        if (match) folderList.value = "bai" + match[0];
+        const worksheet = workbookData.Sheets[sheetName];
+        const rawJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        renderTable(rawJson.slice(2));
+        updateNavButtons();
+    }
+
+    function updateNavButtons() {
+        const idx = sheetSelector.selectedIndex;
+        prevBtn.disabled = (idx <= 0);
+        nextBtn.disabled = (idx >= sheetSelector.options.length - 1);
+    }
+
+    prevBtn.onclick = () => { if(sheetSelector.selectedIndex > 0) { sheetSelector.selectedIndex--; loadDataFromSheet(sheetSelector.value); } };
+    nextBtn.onclick = () => { if(sheetSelector.selectedIndex < sheetSelector.options.length - 1) { sheetSelector.selectedIndex++; loadDataFromSheet(sheetSelector.value); } };
+    sheetSelector.onchange = () => loadDataFromSheet(sheetSelector.value);
+
+    function renderTable(rows) {
+        const headers = ["Từ Vựng", "Hán Tự", "Âm Hán", "Nghĩa"];
+        tableHeader.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+        const filteredData = rows.filter(r => r.length > 0 && r[0]);
+        tableBody.innerHTML = filteredData.map(row => {
+            return `<tr class="data-row" data-img-name="${row[3] || ''}">
+                <td>${row[0] || ''}</td><td>${row[1] || ''}</td>
+                <td>${row[2] || ''}</td><td>${row[3] || ''}</td>
+            </tr>`;
+        }).join('');
+        fileStatus.innerHTML = `✅ Bài: ${sheetSelector.value} | Tổng số: ${filteredData.length} từ.`;
+        setupHoverEffect();
+    }
+
+    function setupHoverEffect() {
+        document.querySelectorAll('.data-row').forEach(row => {
+            row.onmouseenter = () => {
+                const imgName = row.getAttribute('data-img-name').trim();
+                const folder = folderList.value;
+                if (imgName && folder) {
+                    previewImg.src = `${IMAGE_BASE_PATH}${folder}/${encodeURIComponent(imgName)}.JPG`;
+                    previewImg.onload = () => preview.style.display = 'block';
+                    previewImg.onerror = () => preview.style.display = 'none';
+                }
+            };
+            row.onmousemove = (e) => {
+                if (preview.style.display === 'block') {
+                    let x = e.pageX + 20;
+                    if (x + 420 > window.innerWidth) x = e.pageX - 430;
+                    preview.style.left = x + 'px';
+                    preview.style.top = (e.pageY + 10) + 'px';
+                }
+            };
+            row.onmouseleave = () => { preview.style.display = 'none'; };
+        });
+    }
+</script>
+</body>
+</html>
