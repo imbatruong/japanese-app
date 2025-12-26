@@ -2,261 +2,283 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Trình học từ vựng thông minh</title>
+    <title>Smart Language Pro - Tự động tải dữ liệu</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; padding: 0; display: flex; height: 100vh;
-            background: #f0f2f5; color: #333; 
-        }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: 260px; background: white; padding: 20px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; gap: 15px; z-index: 100;
-        }
-
-        h2 { color: #007bff; font-size: 1.2em; text-align: center; margin: 0 0 10px 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-
-        .tool-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; }
+        :root { --primary: #4d7cfe; --dark-bg: #1a1a2e; --card-bg: #16213e; --success: #28a745; --danger: #dc3545; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
         
-        input, select { 
-            padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
-            font-size: 13px; width: 100%; box-sizing: border-box;
-        }
+        /* Sidebar */
+        .sidebar { width: 260px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; z-index: 10; }
+        .nav-zone { border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; width: 100%; }
+        .btn-blue { background: var(--primary); }
+        .btn-purple { background: #6f42c1; }
+        .btn-dark { background: var(--dark-bg); }
 
-        .sheet-nav { display: flex; align-items: center; gap: 5px; }
-        .nav-btn {
-            padding: 8px 12px; background: #007bff; color: white;
-            border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
-        }
-        .nav-btn:disabled { background: #ccc; cursor: not-allowed; }
+        /* Main Content */
+        .main-content { flex: 1; position: relative; display: flex; flex-direction: column; }
+        .view-container { width: 100%; height: 100%; display: none; overflow: hidden; flex-direction: column; }
 
-        /* --- MỤC LUYỆN TẬP (MỚI) --- */
-        .practice-zone {
-            margin-top: 20px; padding-top: 15px; border-top: 2px dashed #eee;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .practice-btn {
-            padding: 12px; background: #28a745; color: white;
-            border: none; border-radius: 6px; cursor: pointer;
-            font-weight: bold; text-align: left; display: flex; align-items: center; gap: 10px;
-            transition: 0.3s; font-size: 13px;
-        }
-        .practice-btn i { font-style: normal; font-size: 18px; }
-        .practice-btn:hover { background: #218838; transform: translateX(5px); }
-        .practice-btn.orange { background: #fd7e14; }
-        .practice-btn.orange:hover { background: #e36a07; }
-        .practice-btn.purple { background: #6f42c1; }
-        .practice-btn.purple:hover { background: #59359a; }
-
-        /* --- KHU VỰC CHÍNH --- */
-        .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .status-bar {
-            background: #e8f4fd; padding: 10px 15px; border-radius: 6px;
-            margin-bottom: 15px; font-weight: bold; color: #007bff;
-            font-size: 0.9em; border-left: 4px solid #007bff;
-        }
-
-        .table-container { 
-            flex: 1; overflow-y: auto; background: white;
-            border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
+        /* Table View */
+        #table-view { background: white; display: flex; }
+        .table-wrap { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; position: sticky; top: 0; z-index: 10; }
-        tr:nth-child(even) { background-color: #fafafa; }
-        tr:hover { background-color: #eef7ff !important; cursor: pointer; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: var(--primary); color: white; position: sticky; top: 0; }
+        tr:hover { background: #f8fbff; }
 
-        #hover-preview {
-            position: absolute; display: none; z-index: 9999;
-            background: white; border: 3px solid #007bff; border-radius: 10px;
-            padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); pointer-events: none;
-        }
-        #hover-preview img { display: block; max-width: 400px; height: auto; border-radius: 5px; }
+        /* Setup View */
+        #setup-view { background: var(--dark-bg); color: white; align-items: center; justify-content: center; }
+        .setup-card { width: 420px; background: var(--card-bg); padding: 30px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); text-align: center; }
+        .setup-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2c3e50; }
+
+        /* Memory Game */
+        #memory-view { background: #4db6ac; align-items: center; padding: 20px; overflow-y: auto; }
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; width: 100%; max-width: 900px; margin-top: 20px; }
+        .memory-card { aspect-ratio: 1/1; background: #26a69a; border-radius: 10px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
+        .memory-card.flipped { transform: rotateY(180deg); }
+        .memory-card.hidden { opacity: 0; pointer-events: none; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: bold; padding: 10px; box-sizing: border-box; text-align: center; }
+        .card-back { background: #00796b; border: 2px solid #b2dfdb; color: white; font-size: 24px; }
+        .card-front { background: white; color: #333; transform: rotateY(180deg); overflow: hidden; }
+        .card-front img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        /* Play Box (Quiz & Typing) */
+        .play-box { width: 480px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; margin: auto; }
+        .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .opt-btn { padding: 15px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; background: white; font-weight: 500; transition: 0.2s; }
+        .opt-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+        .typing-input { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; text-align: center; box-sizing: border-box; }
+
+        /* Hover Preview */
+        #hover-preview { position: absolute; display: none; z-index: 1000; border: 4px solid var(--primary); background: white; border-radius: 12px; padding: 5px; pointer-events: none; }
+        #hover-preview img { max-width: 300px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2>Smart Flashcard</h2>
-    
-    <div class="tool-group">
-        <label>1. Nạp File (Excel/CSV):</label>
-        <input type="file" id="local-file" accept=".xlsx, .xls, .csv">
-    </div>
-
-    <div class="tool-group">
-        <label>2. Dán Link CSV:</label>
-        <input type="text" id="sheet-url" placeholder="Link Google Sheets...">
-    </div>
-
-    <div class="tool-group">
-        <label>3. Chọn bài học:</label>
-        <div class="sheet-nav">
-            <button class="nav-btn" id="prev-sheet">&lt;</button>
-            <select id="sheet-selector" disabled><option>Trống</option></select>
-            <button class="nav-btn" id="next-sheet">&gt;</button>
-        </div>
-    </div>
-
-    <div class="tool-group">
-        <label>4. Kho ảnh (Folder):</label>
-        <select id="folder-list">
-            <script>
-                for(let i=1; i<=25; i++) {
-                    document.write(`<option value="bai${i}">Hình ảnh Bài ${i}</option>`);
-                }
-            </script>
-        </select>
-    </div>
-
-    <div class="practice-zone">
-        <label>🎯 Chế độ luyện tập:</label>
-        
-        <button class="practice-btn" onclick="openPractice('tracnghiem.html')">
-            <i>📝</i> Trắc nghiệm từ vựng
-        </button>
-
-        <button class="practice-btn orange" onclick="openPractice('latthe.html')">
-            <i>🎴</i> Lật thẻ (Flashcards)
-        </button>
-
-        <button class="practice-btn purple" onclick="openPractice('ghepnoi.html')">
-            <i>🔗</i> Ghép nối từ - câu
-        </button>
+    <h2>Smart Learning</h2>
+    <div style="font-size: 12px; color: #666;">Dữ liệu: n5 từ vựng.xlsx</div>
+    <select id="folder-list">
+        <script>for(let i=1; i<=25; i++) document.write(`<option value="bai${i}">Ảnh Bài ${i}</option>`);</script>
+    </select>
+    <div class="nav-zone">
+        <button class="btn btn-blue" onclick="showView('table')">📋 Danh sách bài học</button>
+        <button class="btn btn-dark" onclick="showView('setup')">⚙️ Thiết lập bài test</button>
     </div>
 </div>
 
 <div class="main-content">
-    <div id="file-status" class="status-bar">Sẵn sàng. Hãy nạp dữ liệu để học.</div>
-    
-    <div class="table-container">
-        <table id="data-table">
-            <thead><tr id="table-header"></tr></thead>
-            <tbody id="table-body"></tbody>
-        </table>
+    <div id="table-view" class="view-container" style="display: flex;">
+        <div id="status" style="padding:15px; color:var(--primary); font-weight:bold;">Đang nạp dữ liệu từ GitHub...</div>
+        <div class="table-wrap"><table><thead><tr><th>Từ Vựng</th><th>Hán Tự</th><th>Âm Hán</th><th>Nghĩa</th></tr></thead><tbody id="table-body"></tbody></table></div>
+    </div>
+
+    <div id="setup-view" class="view-container">
+        <div class="setup-card">
+            <h2 style="color:white; margin-top:0;">Chế độ học tập</h2>
+            <div class="setup-row"><span>Số câu hỏi</span><input type="number" id="test-count" value="10" style="width:50px"></div>
+            <div style="display:grid; gap:10px; margin-top:20px;">
+                <button class="btn btn-blue" onclick="startQuiz()">1. Trắc nghiệm (Quiz)</button>
+                <button class="btn btn-purple" onclick="startMemory()">2. Ghép thẻ (Memory Game)</button>
+                <button class="btn btn-dark" style="border:1px solid #444" onclick="startTyping()">3. Tự luận (Gõ chữ)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quiz-view" class="view-container" style="justify-content: center;">
+        <div class="play-box">
+            <div id="qz-progress" style="color:#888;"></div>
+            <img id="qz-img" style="max-height:150px; margin:15px 0; display:none;">
+            <div id="qz-question" style="font-size:28px; font-weight:bold; margin: 10px 0;"></div>
+            <div id="qz-options" class="opt-grid"></div>
+        </div>
+    </div>
+
+    <div id="memory-view" class="view-container">
+        <div id="match-grid" class="game-grid"></div>
+        <button class="btn btn-dark" style="width:150px; margin:20px auto;" onclick="showView('setup')">Thoát</button>
+    </div>
+
+    <div id="typing-view" class="view-container" style="justify-content: center;">
+        <div class="play-box">
+            <div id="tp-progress" style="color:#888;"></div>
+            <img id="tp-img" style="max-height:150px; margin:15px 0;">
+            <div id="tp-meaning" style="font-size:22px; font-weight:bold;"></div>
+            <input type="text" id="tp-input" class="typing-input" placeholder="Gõ từ vựng vào đây..." autocomplete="off">
+            <div id="tp-feedback" style="font-weight:bold; height: 20px;"></div>
+        </div>
     </div>
 </div>
 
-<div id="hover-preview"><img id="preview-img" src="" alt="Ảnh"></div>
+<div id="hover-preview"><img id="preview-img"></div>
 
 <script>
-    const localFile = document.getElementById('local-file');
-    const sheetUrlInput = document.getElementById('sheet-url');
-    const sheetSelector = document.getElementById('sheet-selector');
-    const folderList = document.getElementById('folder-list');
-    const prevBtn = document.getElementById('prev-sheet');
-    const nextBtn = document.getElementById('next-sheet');
-    const tableHeader = document.getElementById('table-header');
-    const tableBody = document.getElementById('table-body');
-    const preview = document.getElementById('hover-preview');
-    const previewImg = document.getElementById('preview-img');
-    const fileStatus = document.getElementById('file-status');
+    let currentData = [];
+    let hoverTimer;
+    let testList = [];
+    let currentIdx = 0;
 
-    const IMAGE_BASE_PATH = "images/";
-    let workbookData = null;
+    // --- TỰ ĐỘNG TẢI DỮ LIỆU TỪ LINK CỦA BẠN ---
+    window.onload = function() {
+        const url = "https://raw.githubusercontent.com/imbatruong/japanese-app/refs/heads/main/n5%20t%E1%BB%AB%20v%E1%BB%B1ng.xlsx";
+        
+        fetch(url)
+            .then(res => {
+                if(!res.ok) throw new Error("Lỗi tải file");
+                return res.arrayBuffer();
+            })
+            .then(ab => {
+                const data = new Uint8Array(ab);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                
+                // Lấy dữ liệu từ dòng 3 (index 2)
+                currentData = json.slice(2).filter(r => r[0]).map(r => ({
+                    v: r[0], h: r[1] || "", a: r[2] || "", n: r[3] || ""
+                }));
 
-    // --- CHỨC NĂNG MỞ TRANG LUYỆN TẬP ---
-    function openPractice(fileName) {
-        // Kiểm tra xem đã nạp dữ liệu chưa
-        if (!workbookData) {
-            alert("Vui lòng nạp file dữ liệu trước khi luyện tập!");
-            return;
+                renderTable();
+                document.getElementById('status').innerText = `✅ Tự động load thành công ${currentData.length} từ bài học.`;
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = "❌ Lỗi: Không thể load file Excel.";
+                console.error(err);
+            });
+    };
+
+    function renderTable() {
+        document.getElementById('table-body').innerHTML = currentData.map(r => `
+            <tr onmouseenter="waitImg('${r.n}', event)" onmouseleave="clearImg()">
+                <td>${r.v}</td><td>${r.h}</td><td>${r.a}</td><td>${r.n}</td>
+            </tr>`).join('');
+    }
+
+    function waitImg(name, e) {
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(() => {
+            const p = document.getElementById('hover-preview');
+            const f = document.getElementById('folder-list').value;
+            document.getElementById('preview-img').src = `images/${f}/${encodeURIComponent(name)}.JPG`;
+            p.style.display = 'block';
+            p.style.left = (e.pageX + 20) + 'px';
+            p.style.top = (e.pageY + 10) + 'px';
+        }, 1200);
+    }
+    function clearImg() { clearTimeout(hoverTimer); document.getElementById('hover-preview').style.display = 'none'; }
+
+    function showView(view) {
+        document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
+        document.getElementById(view + '-view').style.display = 'flex';
+    }
+
+    // --- 1. QUIZ ---
+    function startQuiz() {
+        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
+        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
+        currentIdx = 0;
+        showView('quiz');
+        renderQuiz();
+    }
+    function renderQuiz() {
+        const q = testList[currentIdx];
+        const f = document.getElementById('folder-list').value;
+        document.getElementById('qz-progress').innerText = `Câu ${currentIdx + 1} / ${testList.length}`;
+        document.getElementById('qz-question').innerText = q.v;
+        
+        let opts = [q.n];
+        while(opts.length < 4) {
+            let r = currentData[Math.floor(Math.random()*currentData.length)].n;
+            if(!opts.includes(r)) opts.push(r);
         }
-        // Có thể truyền dữ liệu sang trang mới qua localStorage hoặc URL (tùy nhu cầu)
-        window.location.href = fileName; 
+        opts.sort(() => 0.5 - Math.random());
+        document.getElementById('qz-options').innerHTML = opts.map(o => `<button class="opt-btn" onclick="checkQuiz('${o}','${q.n}')">${o}</button>`).join('');
+    }
+    function checkQuiz(sel, ans) {
+        if(sel === ans) {
+            currentIdx++;
+            if(currentIdx < testList.length) renderQuiz();
+            else { alert("Hoàn thành bài tập!"); showView('setup'); }
+        } else alert("Sai rồi! Đáp án là: " + ans);
     }
 
-    // --- LOGIC XỬ LÝ DỮ LIỆU (Giữ nguyên từ bản trước) ---
-    localFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = new Uint8Array(event.target.result);
-            workbookData = XLSX.read(data, { type: 'array' });
-            updateSheetSelector();
-        };
-        reader.readAsArrayBuffer(file);
-    });
+    // --- 2. MEMORY (ÚP HÌNH) ---
+    let flippedCards = [];
+    function startMemory() {
+        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
+        let items = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
+        let cards = [];
+        const f = document.getElementById('folder-list').value;
 
-    sheetUrlInput.addEventListener('change', () => {
-        const url = sheetUrlInput.value.trim();
-        if (!url) return;
-        fetch(url).then(res => res.arrayBuffer()).then(buffer => {
-            workbookData = XLSX.read(new Uint8Array(buffer), { type: 'array' });
-            updateSheetSelector();
-        }).catch(() => { fileStatus.innerHTML = "❌ Lỗi kết nối CORS."; });
-    });
+        items.forEach(it => {
+            cards.push({ type: 'text', val: it.v, id: it.n });
+            cards.push({ type: 'img', val: `images/${f}/${encodeURIComponent(it.n)}.JPG`, id: it.n });
+        });
+        cards.sort(() => 0.5 - Math.random());
 
-    function updateSheetSelector() {
-        if (!workbookData) return;
-        sheetSelector.innerHTML = workbookData.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
-        sheetSelector.disabled = false;
-        loadDataFromSheet(workbookData.SheetNames[0]);
-    }
+        showView('memory');
+        const grid = document.getElementById('match-grid');
+        grid.innerHTML = '';
+        flippedCards = [];
 
-    function loadDataFromSheet(sheetName) {
-        if (!workbookData) return;
-        sheetSelector.value = sheetName;
-        const match = sheetName.match(/\d+/);
-        if (match) folderList.value = "bai" + match[0];
-        const worksheet = workbookData.Sheets[sheetName];
-        const rawJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        renderTable(rawJson.slice(2));
-        updateNavButtons();
-    }
-
-    function updateNavButtons() {
-        const idx = sheetSelector.selectedIndex;
-        prevBtn.disabled = (idx <= 0);
-        nextBtn.disabled = (idx >= sheetSelector.options.length - 1);
-    }
-
-    prevBtn.onclick = () => { if(sheetSelector.selectedIndex > 0) { sheetSelector.selectedIndex--; loadDataFromSheet(sheetSelector.value); } };
-    nextBtn.onclick = () => { if(sheetSelector.selectedIndex < sheetSelector.options.length - 1) { sheetSelector.selectedIndex++; loadDataFromSheet(sheetSelector.value); } };
-    sheetSelector.onchange = () => loadDataFromSheet(sheetSelector.value);
-
-    function renderTable(rows) {
-        const headers = ["Từ Vựng", "Hán Tự", "Âm Hán", "Nghĩa"];
-        tableHeader.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
-        const filteredData = rows.filter(r => r.length > 0 && r[0]);
-        tableBody.innerHTML = filteredData.map(row => {
-            return `<tr class="data-row" data-img-name="${row[3] || ''}">
-                <td>${row[0] || ''}</td><td>${row[1] || ''}</td>
-                <td>${row[2] || ''}</td><td>${row[3] || ''}</td>
-            </tr>`;
-        }).join('');
-        fileStatus.innerHTML = `✅ Bài: ${sheetSelector.value} | Tổng số: ${filteredData.length} từ.`;
-        setupHoverEffect();
-    }
-
-    function setupHoverEffect() {
-        document.querySelectorAll('.data-row').forEach(row => {
-            row.onmouseenter = () => {
-                const imgName = row.getAttribute('data-img-name').trim();
-                const folder = folderList.value;
-                if (imgName && folder) {
-                    previewImg.src = `${IMAGE_BASE_PATH}${folder}/${encodeURIComponent(imgName)}.JPG`;
-                    previewImg.onload = () => preview.style.display = 'block';
-                    previewImg.onerror = () => preview.style.display = 'none';
+        cards.forEach(card => {
+            const el = document.createElement('div');
+            el.className = 'memory-card';
+            el.innerHTML = `<div class="card-face card-back">?</div><div class="card-face card-front">${card.type === 'img' ? `<img src="${card.val}">` : card.val}</div>`;
+            el.onclick = () => {
+                if(el.classList.contains('flipped') || flippedCards.length === 2) return;
+                el.classList.add('flipped');
+                flippedCards.push({ el, card });
+                if(flippedCards.length === 2) {
+                    if(flippedCards[0].card.id === flippedCards[1].card.id) {
+                        setTimeout(() => { 
+                            flippedCards.forEach(c => c.el.classList.add('hidden')); 
+                            flippedCards = []; 
+                            if(document.querySelectorAll('.memory-card:not(.hidden)').length === 0) showView('setup');
+                        }, 600);
+                    } else {
+                        setTimeout(() => { flippedCards.forEach(c => c.el.classList.remove('flipped')); flippedCards = []; }, 1000);
+                    }
                 }
             };
-            row.onmousemove = (e) => {
-                if (preview.style.display === 'block') {
-                    let x = e.pageX + 20;
-                    if (x + 420 > window.innerWidth) x = e.pageX - 430;
-                    preview.style.left = x + 'px';
-                    preview.style.top = (e.pageY + 10) + 'px';
-                }
-            };
-            row.onmouseleave = () => { preview.style.display = 'none'; };
+            grid.appendChild(el);
         });
     }
+
+    // --- 3. TYPING (TỰ LUẬN) ---
+    function startTyping() {
+        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
+        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
+        currentIdx = 0;
+        showView('typing');
+        renderTyping();
+    }
+    function renderTyping() {
+        const q = testList[currentIdx];
+        const f = document.getElementById('folder-list').value;
+        document.getElementById('tp-progress').innerText = `Câu ${currentIdx + 1} / ${testList.length}`;
+        document.getElementById('tp-meaning').innerText = q.n;
+        document.getElementById('tp-img').src = `images/${f}/${encodeURIComponent(q.n)}.JPG`;
+        document.getElementById('tp-input').value = '';
+        document.getElementById('tp-input').focus();
+        document.getElementById('tp-feedback').innerText = '';
+    }
+
+    document.getElementById('tp-input').onkeypress = (e) => {
+        if(e.key === 'Enter') {
+            const ans = document.getElementById('tp-input').value.trim();
+            const correct = testList[currentIdx].v;
+            if(ans === correct) {
+                document.getElementById('tp-feedback').innerHTML = "<span style='color:green'>Chính xác!</span>";
+                setTimeout(() => { currentIdx++; if(currentIdx < testList.length) renderTyping(); else showView('setup'); }, 800);
+            } else {
+                document.getElementById('tp-feedback').innerHTML = `<span style='color:red'>Sai! Đáp án: ${correct}</span>`;
+            }
+        }
+    };
 </script>
 </body>
 </html>
