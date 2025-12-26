@@ -2,245 +2,182 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Language Pro - Tự động tải dữ liệu</title>
+    <title>Smart Language Pro - N5 Auto Load</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #4d7cfe; --dark-bg: #1a1a2e; --card-bg: #16213e; --success: #28a745; --danger: #dc3545; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
-        
-        /* Sidebar */
         .sidebar { width: 260px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; z-index: 10; }
         .nav-zone { border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; width: 100%; }
         .btn-blue { background: var(--primary); }
         .btn-purple { background: #6f42c1; }
         .btn-dark { background: var(--dark-bg); }
-
-        /* Main Content */
         .main-content { flex: 1; position: relative; display: flex; flex-direction: column; }
         .view-container { width: 100%; height: 100%; display: none; overflow: hidden; flex-direction: column; }
-
-        /* Table View */
         #table-view { background: white; display: flex; }
         .table-wrap { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         th { background: var(--primary); color: white; position: sticky; top: 0; }
-        tr:hover { background: #f8fbff; }
-
-        /* Setup View */
-        #setup-view { background: var(--dark-bg); color: white; align-items: center; justify-content: center; }
-        .setup-card { width: 420px; background: var(--card-bg); padding: 30px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); text-align: center; }
-        .setup-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2c3e50; }
-
-        /* Memory Game */
-        #memory-view { background: #4db6ac; align-items: center; padding: 20px; overflow-y: auto; }
-        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; width: 100%; max-width: 900px; margin-top: 20px; }
-        .memory-card { aspect-ratio: 1/1; background: #26a69a; border-radius: 10px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
+        .setup-card { width: 420px; background: var(--card-bg); padding: 30px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); text-align: center; margin: auto; color: white; }
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; width: 100%; max-width: 800px; margin: 20px auto; }
+        .memory-card { aspect-ratio: 1/1; background: #26a69a; border-radius: 8px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.4s; }
         .memory-card.flipped { transform: rotateY(180deg); }
         .memory-card.hidden { opacity: 0; pointer-events: none; }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: bold; padding: 10px; box-sizing: border-box; text-align: center; }
-        .card-back { background: #00796b; border: 2px solid #b2dfdb; color: white; font-size: 24px; }
-        .card-front { background: white; color: #333; transform: rotateY(180deg); overflow: hidden; }
-        .card-front img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-        /* Play Box (Quiz & Typing) */
-        .play-box { width: 480px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; margin: auto; }
-        .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .opt-btn { padding: 15px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; background: white; font-weight: 500; transition: 0.2s; }
-        .opt-btn:hover { border-color: var(--primary); background: #f0f7ff; }
-        .typing-input { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; text-align: center; box-sizing: border-box; }
-
-        /* Hover Preview */
-        #hover-preview { position: absolute; display: none; z-index: 1000; border: 4px solid var(--primary); background: white; border-radius: 12px; padding: 5px; pointer-events: none; }
-        #hover-preview img { max-width: 300px; display: block; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; padding: 5px; text-align: center; box-sizing: border-box; }
+        .card-back { background: #00796b; color: white; font-size: 20px; }
+        .card-front { background: white; transform: rotateY(180deg); font-size: 14px; }
+        .card-front img { max-width: 95%; max-height: 95%; object-fit: contain; }
+        .play-box { width: 90%; max-width: 450px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; margin: auto; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2>Smart Learning</h2>
-    <div style="font-size: 12px; color: #666;">Dữ liệu: n5 từ vựng.xlsx</div>
+    <h2>Smart N5</h2>
+    <div id="status" style="font-size: 13px; color: var(--primary); font-weight: bold;">Đang tải...</div>
     <select id="folder-list">
         <script>for(let i=1; i<=25; i++) document.write(`<option value="bai${i}">Ảnh Bài ${i}</option>`);</script>
     </select>
     <div class="nav-zone">
-        <button class="btn btn-blue" onclick="showView('table')">📋 Danh sách bài học</button>
-        <button class="btn btn-dark" onclick="showView('setup')">⚙️ Thiết lập bài test</button>
+        <button class="btn btn-blue" onclick="showView('table')">📋 Danh sách từ</button>
+        <button class="btn btn-dark" onclick="showView('setup')">⚙️ Chế độ học</button>
     </div>
 </div>
 
 <div class="main-content">
     <div id="table-view" class="view-container" style="display: flex;">
-        <div id="status" style="padding:15px; color:var(--primary); font-weight:bold;">Đang nạp dữ liệu từ GitHub...</div>
         <div class="table-wrap"><table><thead><tr><th>Từ Vựng</th><th>Hán Tự</th><th>Âm Hán</th><th>Nghĩa</th></tr></thead><tbody id="table-body"></tbody></table></div>
     </div>
 
     <div id="setup-view" class="view-container">
         <div class="setup-card">
-            <h2 style="color:white; margin-top:0;">Chế độ học tập</h2>
-            <div class="setup-row"><span>Số câu hỏi</span><input type="number" id="test-count" value="10" style="width:50px"></div>
-            <div style="display:grid; gap:10px; margin-top:20px;">
-                <button class="btn btn-blue" onclick="startQuiz()">1. Trắc nghiệm (Quiz)</button>
-                <button class="btn btn-purple" onclick="startMemory()">2. Ghép thẻ (Memory Game)</button>
-                <button class="btn btn-dark" style="border:1px solid #444" onclick="startTyping()">3. Tự luận (Gõ chữ)</button>
-            </div>
+            <h2>Thiết lập bài học</h2>
+            <div style="margin-bottom: 20px;">Số câu hỏi: <input type="number" id="test-count" value="10" style="width:50px"></div>
+            <button class="btn btn-blue" style="margin-bottom:10px" onclick="startQuiz()">1. Trắc nghiệm</button>
+            <button class="btn btn-purple" style="margin-bottom:10px" onclick="startMemory()">2. Ghép thẻ (Memory)</button>
+            <button class="btn btn-dark" onclick="startTyping()">3. Tự luận (Gõ chữ)</button>
         </div>
     </div>
 
-    <div id="quiz-view" class="view-container" style="justify-content: center;">
+    <div id="quiz-view" class="view-container" style="justify-content:center;">
         <div class="play-box">
-            <div id="qz-progress" style="color:#888;"></div>
-            <img id="qz-img" style="max-height:150px; margin:15px 0; display:none;">
-            <div id="qz-question" style="font-size:28px; font-weight:bold; margin: 10px 0;"></div>
-            <div id="qz-options" class="opt-grid"></div>
+            <div id="qz-progress"></div>
+            <div id="qz-question" style="font-size:30px; font-weight:bold; margin:20px 0;"></div>
+            <div id="qz-options" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
         </div>
     </div>
 
-    <div id="memory-view" class="view-container">
+    <div id="memory-view" class="view-container" style="background:#4db6ac; overflow-y:auto;">
         <div id="match-grid" class="game-grid"></div>
-        <button class="btn btn-dark" style="width:150px; margin:20px auto;" onclick="showView('setup')">Thoát</button>
+        <button class="btn btn-dark" style="width:120px; margin:10px auto;" onclick="showView('setup')">Thoát</button>
     </div>
 
-    <div id="typing-view" class="view-container" style="justify-content: center;">
+    <div id="typing-view" class="view-container" style="justify-content:center;">
         <div class="play-box">
-            <div id="tp-progress" style="color:#888;"></div>
-            <img id="tp-img" style="max-height:150px; margin:15px 0;">
+            <div id="tp-progress"></div>
+            <img id="tp-img" style="max-height:140px; margin:10px 0;">
             <div id="tp-meaning" style="font-size:22px; font-weight:bold;"></div>
-            <input type="text" id="tp-input" class="typing-input" placeholder="Gõ từ vựng vào đây..." autocomplete="off">
-            <div id="tp-feedback" style="font-weight:bold; height: 20px;"></div>
+            <input type="text" id="tp-input" style="width:100%; padding:12px; font-size:18px; margin:15px 0; text-align:center;" placeholder="Gõ từ vựng...">
+            <div id="tp-feedback" style="height:20px; font-weight:bold;"></div>
         </div>
     </div>
 </div>
 
-<div id="hover-preview"><img id="preview-img"></div>
-
 <script>
     let currentData = [];
-    let hoverTimer;
     let testList = [];
     let currentIdx = 0;
 
-    // --- TỰ ĐỘNG TẢI DỮ LIỆU TỪ LINK CỦA BẠN ---
+    // TỰ ĐỘNG LOAD FILE TỪ LINK GITHUB CỦA BẠN
     window.onload = function() {
-        const url = "https://raw.githubusercontent.com/imbatruong/japanese-app/refs/heads/main/n5%20t%E1%BB%AB%20v%E1%BB%B1ng.xlsx";
+        const url = "https://raw.githubusercontent.com/imbatruong/japanese-app/main/n5%20t%E1%BB%AB%20v%E1%BB%B1ng.xlsx?t=" + new Date().getTime();
         
         fetch(url)
-            .then(res => {
-                if(!res.ok) throw new Error("Lỗi tải file");
-                return res.arrayBuffer();
-            })
+            .then(res => res.arrayBuffer())
             .then(ab => {
                 const data = new Uint8Array(ab);
                 const workbook = XLSX.read(data, {type: 'array'});
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
                 
-                // Lấy dữ liệu từ dòng 3 (index 2)
+                // Lấy data từ dòng 3 (index 2)
                 currentData = json.slice(2).filter(r => r[0]).map(r => ({
                     v: r[0], h: r[1] || "", a: r[2] || "", n: r[3] || ""
                 }));
 
                 renderTable();
-                document.getElementById('status').innerText = `✅ Tự động load thành công ${currentData.length} từ bài học.`;
+                document.getElementById('status').innerText = `✅ Đã nạp ${currentData.length} từ.`;
             })
             .catch(err => {
-                document.getElementById('status').innerText = "❌ Lỗi: Không thể load file Excel.";
+                document.getElementById('status').innerText = "❌ Lỗi tải file!";
                 console.error(err);
             });
     };
 
     function renderTable() {
         document.getElementById('table-body').innerHTML = currentData.map(r => `
-            <tr onmouseenter="waitImg('${r.n}', event)" onmouseleave="clearImg()">
-                <td>${r.v}</td><td>${r.h}</td><td>${r.a}</td><td>${r.n}</td>
-            </tr>`).join('');
+            <tr><td>${r.v}</td><td>${r.h}</td><td>${r.a}</td><td>${r.n}</td></tr>`).join('');
     }
-
-    function waitImg(name, e) {
-        clearTimeout(hoverTimer);
-        hoverTimer = setTimeout(() => {
-            const p = document.getElementById('hover-preview');
-            const f = document.getElementById('folder-list').value;
-            document.getElementById('preview-img').src = `images/${f}/${encodeURIComponent(name)}.JPG`;
-            p.style.display = 'block';
-            p.style.left = (e.pageX + 20) + 'px';
-            p.style.top = (e.pageY + 10) + 'px';
-        }, 1200);
-    }
-    function clearImg() { clearTimeout(hoverTimer); document.getElementById('hover-preview').style.display = 'none'; }
 
     function showView(view) {
         document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
         document.getElementById(view + '-view').style.display = 'flex';
     }
 
-    // --- 1. QUIZ ---
+    // CHẾ ĐỘ 1: TRẮC NGHIỆM
     function startQuiz() {
-        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
-        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
+        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, document.getElementById('test-count').value);
         currentIdx = 0;
         showView('quiz');
         renderQuiz();
     }
     function renderQuiz() {
         const q = testList[currentIdx];
-        const f = document.getElementById('folder-list').value;
-        document.getElementById('qz-progress').innerText = `Câu ${currentIdx + 1} / ${testList.length}`;
+        document.getElementById('qz-progress').innerText = `${currentIdx + 1} / ${testList.length}`;
         document.getElementById('qz-question').innerText = q.v;
-        
         let opts = [q.n];
         while(opts.length < 4) {
             let r = currentData[Math.floor(Math.random()*currentData.length)].n;
             if(!opts.includes(r)) opts.push(r);
         }
         opts.sort(() => 0.5 - Math.random());
-        document.getElementById('qz-options').innerHTML = opts.map(o => `<button class="opt-btn" onclick="checkQuiz('${o}','${q.n}')">${o}</button>`).join('');
+        document.getElementById('qz-options').innerHTML = opts.map(o => `<button class="btn btn-blue" style="font-size:14px" onclick="checkQuiz('${o}','${q.n}')">${o}</button>`).join('');
     }
-    function checkQuiz(sel, ans) {
-        if(sel === ans) {
-            currentIdx++;
-            if(currentIdx < testList.length) renderQuiz();
-            else { alert("Hoàn thành bài tập!"); showView('setup'); }
-        } else alert("Sai rồi! Đáp án là: " + ans);
+    function checkQuiz(s, a) {
+        if(s === a) { currentIdx++; if(currentIdx < testList.length) renderQuiz(); else showView('setup'); }
+        else alert("Sai rồi! Đáp án là: " + a);
     }
 
-    // --- 2. MEMORY (ÚP HÌNH) ---
-    let flippedCards = [];
+    // CHẾ ĐỘ 2: MEMORY GAME
+    let flipped = [];
     function startMemory() {
-        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
+        let count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
         let items = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
         let cards = [];
-        const f = document.getElementById('folder-list').value;
-
+        const folder = document.getElementById('folder-list').value;
         items.forEach(it => {
             cards.push({ type: 'text', val: it.v, id: it.n });
-            cards.push({ type: 'img', val: `images/${f}/${encodeURIComponent(it.n)}.JPG`, id: it.n });
+            cards.push({ type: 'img', val: `images/${folder}/${encodeURIComponent(it.n)}.JPG`, id: it.n });
         });
         cards.sort(() => 0.5 - Math.random());
-
         showView('memory');
         const grid = document.getElementById('match-grid');
-        grid.innerHTML = '';
-        flippedCards = [];
-
+        grid.innerHTML = ''; flipped = [];
         cards.forEach(card => {
             const el = document.createElement('div');
             el.className = 'memory-card';
-            el.innerHTML = `<div class="card-face card-back">?</div><div class="card-face card-front">${card.type === 'img' ? `<img src="${card.val}">` : card.val}</div>`;
+            el.innerHTML = `<div class="card-face card-back">?</div><div class="card-face card-front">${card.type==='img'?`<img src="${card.val}">`:card.val}</div>`;
             el.onclick = () => {
-                if(el.classList.contains('flipped') || flippedCards.length === 2) return;
+                if(el.classList.contains('flipped') || flipped.length === 2) return;
                 el.classList.add('flipped');
-                flippedCards.push({ el, card });
-                if(flippedCards.length === 2) {
-                    if(flippedCards[0].card.id === flippedCards[1].card.id) {
-                        setTimeout(() => { 
-                            flippedCards.forEach(c => c.el.classList.add('hidden')); 
-                            flippedCards = []; 
-                            if(document.querySelectorAll('.memory-card:not(.hidden)').length === 0) showView('setup');
-                        }, 600);
+                flipped.push({el, card});
+                if(flipped.length === 2) {
+                    if(flipped[0].card.id === flipped[1].card.id) {
+                        setTimeout(() => { flipped.forEach(c => c.el.classList.add('hidden')); flipped = []; if(!document.querySelector('.memory-card:not(.hidden)')) showView('setup'); }, 600);
                     } else {
-                        setTimeout(() => { flippedCards.forEach(c => c.el.classList.remove('flipped')); flippedCards = []; }, 1000);
+                        setTimeout(() => { flipped.forEach(c => c.el.classList.remove('flipped')); flipped = []; }, 1000);
                     }
                 }
             };
@@ -248,10 +185,9 @@
         });
     }
 
-    // --- 3. TYPING (TỰ LUẬN) ---
+    // CHẾ ĐỘ 3: TỰ LUẬN
     function startTyping() {
-        const count = Math.min(parseInt(document.getElementById('test-count').value), currentData.length);
-        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, count);
+        testList = [...currentData].sort(() => 0.5 - Math.random()).slice(0, document.getElementById('test-count').value);
         currentIdx = 0;
         showView('typing');
         renderTyping();
@@ -259,24 +195,18 @@
     function renderTyping() {
         const q = testList[currentIdx];
         const f = document.getElementById('folder-list').value;
-        document.getElementById('tp-progress').innerText = `Câu ${currentIdx + 1} / ${testList.length}`;
+        document.getElementById('tp-progress').innerText = `${currentIdx + 1} / ${testList.length}`;
         document.getElementById('tp-meaning').innerText = q.n;
         document.getElementById('tp-img').src = `images/${f}/${encodeURIComponent(q.n)}.JPG`;
         document.getElementById('tp-input').value = '';
         document.getElementById('tp-input').focus();
         document.getElementById('tp-feedback').innerText = '';
     }
-
     document.getElementById('tp-input').onkeypress = (e) => {
         if(e.key === 'Enter') {
-            const ans = document.getElementById('tp-input').value.trim();
-            const correct = testList[currentIdx].v;
-            if(ans === correct) {
-                document.getElementById('tp-feedback').innerHTML = "<span style='color:green'>Chính xác!</span>";
-                setTimeout(() => { currentIdx++; if(currentIdx < testList.length) renderTyping(); else showView('setup'); }, 800);
-            } else {
-                document.getElementById('tp-feedback').innerHTML = `<span style='color:red'>Sai! Đáp án: ${correct}</span>`;
-            }
+            if(document.getElementById('tp-input').value.trim() === testList[currentIdx].v) {
+                currentIdx++; if(currentIdx < testList.length) renderTyping(); else showView('setup');
+            } else { document.getElementById('tp-feedback').innerHTML = `<span style='color:red'>Sai! Đáp án: ${testList[currentIdx].v}</span>`; }
         }
     };
 </script>
